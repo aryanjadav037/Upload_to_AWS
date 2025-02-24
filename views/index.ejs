@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload File</title>
+</head>
+<body>
+    <h2>Upload a File</h2>
+    <input type="file" id="fileInput" required>
+    <button onclick="uploadFile()">Upload</button>
+
+    <script>
+        async function uploadFile() {
+            const fileInput = document.getElementById("fileInput");
+            if (!fileInput.files.length) {
+                alert("Please select a file!");
+                return;
+            }
+
+            const file = fileInput.files[0];
+
+            // Step 1: Get Upload URL
+            const response = await fetch("/url", { method: "POST" });
+            const { uploadUrl, filename } = await response.json();
+            console.log("file: ", filename, "uploadURL :", uploadUrl)
+            
+
+            // Step 2: Upload File to S3
+            await fetch(uploadUrl, {
+                method: "PUT",
+                body: file,
+                headers: { "Content-Type": file.type }
+            });
+
+            alert("File uploaded successfully!");
+
+            // Step 3: Call Backend to Process the File
+            const lambdaResponse = await fetch("http://localhost:3000/upload-v2", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ filename }) 
+            });
+
+            const result = await lambdaResponse.json();
+            console.log("Lambda Response:", result);
+        }
+    </script>
+</body>
+</html>
